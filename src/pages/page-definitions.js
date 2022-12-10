@@ -11,10 +11,10 @@ export const pages = [
   {name: 'Home', url: '/', element: <Home/>, description: 'Home page'},
   {name: 'Deposit', url: 'deposit', element: <Deposit/>, description: 'Deposit money'},
   {name: 'Withdraw', url: 'withdraw', element: <Withdraw/>, description: 'Withdraw money'},
-  {
-    name: 'All Data',
-    url: 'all-data',
-    element: <AllData/>,
-    description: 'See your data in one place'
-  }
+  // {
+  //   name: 'All Data',
+  //   url: 'all-data',
+  //   element: <AllData/>,
+  //   description: 'See your data in one place'
+  // }
 ];
