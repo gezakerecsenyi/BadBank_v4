@@ -32,6 +32,12 @@ interface User {
     balance: number;
 }
 
+interface HistoryItem {
+    user: string;
+    action: 'withdraw' | 'deposit';
+    sum: number;
+}
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -79,19 +85,39 @@ async function main() {
 
     const db = client.db(dbName);
 
-    const getUser = async (req: Request, res: Response) => {
-        if (!req.session.user) {
+    const storeUpdate = async (req: Request, res: Response, historyItem: HistoryItem) => {
+        await db
+            .collection('history')
+            .insertOne(historyItem);
+
+        await getUser(req, res);
+    };
+
+    const getUser = async (req: Request, res: Response, idOverride?: string) => {
+        const id = req.session.user || idOverride;
+        if (!id) {
             res.sendStatus(403);
         }
 
-        const user = await db
-            .collection('users')
+        const users = await db
+            .collection<User>('users')
             .find({
-                _id: req.session.user,
+                _id: id,
+            })
+            .toArray();
+        const user = users[0];
+
+        const updates = await db
+            .collection<HistoryItem>('history')
+            .find({
+                user: id,
             })
             .toArray();
 
-        res.send(JSON.stringify(user[0]));
+        res.send(JSON.stringify({
+            ...user,
+            submissions: updates,
+        }));
     };
 
     const initSession = (user: User, req: Request, res: Response) => {
@@ -103,14 +129,14 @@ async function main() {
                     originalMaxAge: maxCookieAge,
                 },
             },
-            (err) => {
+            async (err) => {
                 req.session.user = user._id;
                 if (err) {
                     res.sendStatus(500);
                     return;
                 }
 
-                res.send(JSON.stringify(user));
+                await getUser(req, res, user._id);
             },
         );
     };
@@ -193,10 +219,18 @@ async function main() {
                     } as Partial<User>,
                 })
                 .then(async () => {
-                    await getUser(req, res);
+                    await storeUpdate(
+                        req,
+                        res,
+                        {
+                            user: req.session.user!,
+                            action: balance > 0 ? 'deposit' : 'withdraw',
+                            sum: Math.abs(balance),
+                        },
+                    );
                 });
         }
-    }
+    };
 
     app.post('/deposit', (req, res) => {
         modifyBalance(req.body.sum, req, res);

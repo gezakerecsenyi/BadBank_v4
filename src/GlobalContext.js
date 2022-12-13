@@ -89,7 +89,8 @@ async function reducer(action) {
 
             if (req.status === 403) {
                 return {
-                    currentUserId: undefined, currentUser: undefined,
+                    currentUserId: undefined,
+                    currentUser: undefined,
                 };
             }
 
@@ -132,14 +133,6 @@ async function reducer(action) {
             return {
                 currentUserId: res._id,
                 currentUser: res,
-            };
-        case ACTION_ENUM.log_user_submission:
-            return {
-                userSubmissions: [{
-                    user: action.payload.user,
-                    sum: action.payload.sum,
-                    action: action.payload.action,
-                }],
             };
         case ACTION_ENUM.display_toast:
             return {
